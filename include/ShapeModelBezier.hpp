@@ -4,14 +4,11 @@
 #include <ShapeModel.hpp>
 #include "Bezier.hpp"
 
-#include <Eigen/Cholesky>
-#include <Eigen/Dense>
 #include <array>
 #include <ShapeModelTri.hpp>
 
 
 
-typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> MatrixXd;
 
 template <class PointType>
 class ShapeModelBezier : public ShapeModel<PointType>{
@@ -44,11 +41,6 @@ public:
 	std::shared_ptr<arma::mat> get_info_mat_ptr() const;
 	std::shared_ptr<arma::vec> get_dX_bar_ptr() const;
 
-	/**
-	Constructs a kd tree for ray-tracing purposes
-	*/
-	virtual void construct_kd_tree_shape();
-
 
 	/**
 	Updates the values of the center of mass, volume
@@ -75,7 +67,6 @@ public:
 
 	/**
 	Elevates the degree of all Bezier patches in the shape model by one
-	@param update true if the mass properties/kd tree of the shape model should be updated , false otherwise
 	*/
 	void elevate_degree();
 
@@ -113,12 +104,7 @@ public:
 	arma::mat::fixed<3,3> compute_inertia(const arma::vec & deviation) const;
 
 
-	/**
-	Finds the intersect between the provided ray and the shape model
-	@param ray pointer to ray. If a hit is found, the ray's internal is changed to store the range to the hit point
-	*/
-	virtual bool ray_trace(Ray * ray,bool outside = true);
-
+	
 	void save_both(std::string partial_path);
 
 

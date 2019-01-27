@@ -22,14 +22,14 @@
 
 # @file   CMakeLists.txt
 # @Author Benjamin Bercovici (bebe0705@colorado.edu)
-# @date   July, 2017
-# @brief  CMake listing enabling compilation and installation of the RBK library
+# @date   January, 2019
+# @brief  CMake listing enabling compilation and installation of the ShapeUQLib library
 
 
 cmake_minimum_required(VERSION 3.0)
 
 
-set(LIB_NAME "RigidBodyKinematics" CACHE STRING "Name of library to be created.")
+set(LIB_NAME "ShapeUQLib" CACHE STRING "Name of library to be created.")
 
 
 
@@ -39,17 +39,83 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/source/cmake)
 add_definitions(-Wall -O2 )
 set(CMAKE_CXX_FLAGS "-std=c++14")
 
+# Include directories
+include_directories(include)
+
+# Find Boost
+find_package(Boost COMPONENTS filesystem system REQUIRED) 
+include_directories(${Boost_INCLUDE_DIRS}) 
+
 # Find Armadillo 
-find_package(Armadillo REQUIRED)
+find_package(Armadillo REQUIRED )
 include_directories(${ARMADILLO_INCLUDE_DIRS})
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-add_library(${LIB_NAME} SHARED source/RigidBodyKinematics.cpp)
-target_link_libraries(${LIB_NAME} ${ARMADILLO_LIBRARIES})
+# Find RBK 
+find_package(RigidBodyKinematics REQUIRED PATHS ${RBK_LOC})
+include_directories(${RBK_INCLUDE_DIR} )
 
-# If ${BREW} is true, installing from homebrew formula
-if(NOT BREW)
+# Find VTK Package
+find_package(VTK REQUIRED PATHS ${VTK_PATH})
+include(${VTK_USE_FILE})
+
+# Find OpenMP
+find_package(OpenMP)
+if(OPENMP_FOUND)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
+
+# Find SbgatCore 
+find_package(SbgatCore REQUIRED PATHS ${SBGAT_LOC})
+include_directories(${SBGATCORE_INCLUDE_HEADER})
+
+
+
+# Add source files in root directory
+add_library(${LIB_NAME} SHARED
+	source/Bezier.cpp
+	source/ControlPoint.cpp
+	source/Element.cpp
+	source/Facet.cpp
+	source/FrameGraph.cpp
+	source/RefFrame.cpp
+	source/ShapeModel.cpp
+	source/ShapeModelBezier.cpp
+	source/ShapeModelImporter.cpp
+	source/ShapeModelTri.cpp
+	)
+
+# Linking
+set(library_dependencies
+	${ARMADILLO_LIBRARIES}
+	${Boost_LIBRARIES}
+	${RBK_LIBRARY}
+	${VTK_LIBRARIES}
+	)
+
+
+if (UNIX AND NOT APPLE )
+	target_link_libraries(${LIB_NAME} ${library_dependencies})
+elseif (OPENMP_FOUND)
+	target_link_libraries(${LIB_NAME} ${library_dependencies} OpenMP::OpenMP_CXX)
+else()
+	target_link_libraries(${LIB_NAME} ${library_dependencies})
+endif()
+
+file(GLOB includes include/*.hpp)
+
+# Installing
+if(${IS_FORTUNA})
+
+	install (TARGETS ${LIB_NAME} DESTINATION /home/bebe0705/libs/local/lib)
+	install(FILES ${includes} DESTINATION /home/bebe0705/libs/local/include/ShapeUQLib/)
+	install (FILES ${PROJECT_SOURCE_DIR}/cmake/ShapeUQLibConfig.cmake DESTINATION /home/bebe0705/libs/local/lib/cmake/ShapeUQLib/)
+
+else()
+	
 	install (TARGETS ${LIB_NAME} DESTINATION /usr/local/lib)
-	install (FILES ${PROJECT_SOURCE_DIR}/include/RigidBodyKinematics.hpp DESTINATION /usr/local/include/)
-	install (DIRECTORY ${PROJECT_SOURCE_DIR}/${LIB_NAME} DESTINATION /usr/local/share)
+	install(FILES ${includes} DESTINATION /usr/local/include/ShapeUQLib/)
+	install (FILES ${PROJECT_SOURCE_DIR}/cmake/ShapeUQLibConfig.cmake DESTINATION /usr/local/share/ShapeUQLib/)
+
+
 endif()

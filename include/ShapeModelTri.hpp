@@ -42,12 +42,6 @@ public:
 		const std::vector<int> & super_elements,
 		const std::vector<PointType> & control_points);
 
-	/**
-	Constructs the KDTree holding the shape model for ray-casting purposes
-	@param verbose true will save the bounding boxes to a file and display
-	kd tree construction details
-	*/
-	virtual void construct_kd_tree_shape();
 
 	/**
 	Determines whether the provided point lies inside or outside the shape model.
@@ -138,13 +132,6 @@ public:
 
 
 	Facet & get_element(int e);
-
-
-	/**
-	Finds the intersect between the provided ray and the shape model
-	@param ray pointer to ray. If a hit is found, the ray's internal is changed to store the range to the hit point
-	*/
-	virtual bool ray_trace(Ray * ray,bool outside = true);
 
 
 	virtual const std::vector<int> & get_element_control_points(int e) const;

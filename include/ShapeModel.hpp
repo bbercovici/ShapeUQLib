@@ -10,13 +10,11 @@
 #include <OMP_flags.hpp>
 
 #include <FrameGraph.hpp>
-// #include <KDTreeControlPoints.hpp>
-// #include <KDTreeShape.hpp>
+
 
 
 class Ray ;
 class Element;
-class KDTreeShape;
 template <template<class> class ContainerType, class PointType>  class KDTree ;
 
 /**
@@ -43,8 +41,6 @@ public:
 	ShapeModel(std::string ref_frame_name,
 		FrameGraph * frame_graph);
 
-	virtual void construct_kd_tree_shape() = 0;
-
 
 	/**
 	Returns the dimensions of the bounding box
@@ -66,13 +62,7 @@ public:
 	void rotate(const arma::mat::fixed<3,3> & M);
 
 	
-	/**
-	Returns pointer to KDTreeShape member.
-	@return pointer to KDTreeShape
-	*/
-	std::shared_ptr<KDTreeShape> get_KDTreeShape() const ;
-
-
+	
 	/**
 	Shifts the coordinates of the shape model
 	so as to have (0,0,0) aligned with its barycenter
@@ -168,14 +158,6 @@ public:
 	*/
 	unsigned int get_NControlPoints() const ;
 
-
-	/**
-	Constructs the KDTree holding the facets of the shape model for closest facet detection
-	@param verbose true will save the bounding boxes to a file and display
-	kd tree construction details
-	*/
-	void construct_kd_tree_control_points();
-
 	/**
 	Computes the surface area of the shape model
 	*/
@@ -194,12 +176,7 @@ public:
 	*/
 	virtual void compute_inertia() = 0;
 
-	/**
-	Finds the intersect between the provided ray and the shape model
-	@param ray pointer to ray. If a hit is found, the ray's internal is changed to store the range to the hit point
-	*/
-	virtual bool ray_trace(Ray * ray,bool outside = true) = 0;
-
+	
 
 
 	/**
@@ -311,8 +288,6 @@ protected:
 
 	std::vector<std::set<int> > edges;
 	std::vector<PointType> control_points;
-	std::shared_ptr<KDTree<ShapeModel,PointType> > kdt_control_points = nullptr;
-	std::shared_ptr<KDTreeShape> kdt_facet = nullptr;
 
 	std::map<std::shared_ptr<PointType> ,unsigned int> pointer_to_global_index;
 

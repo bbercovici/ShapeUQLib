@@ -1,5 +1,4 @@
 #include <Bezier.hpp>
-#include <Psopt.hpp>
 #include <ShapeModel.hpp>
 
 #include <vtkMath.h>
@@ -503,11 +502,6 @@ arma::mat::fixed<3,2> Bezier::partial_bezier_dv(
 }
 
 
-double Bezier::get_fitting_residuals() const{
-	return this -> fitting_residuals;
-}
-
-
 arma::mat::fixed<3,2> Bezier::partial_bezier(
 	const double u,
 	const double v) const{
@@ -547,229 +541,10 @@ arma::mat::fixed<3,3> Bezier::partial_n_partial_Ck(const double u, const double 
 
 
 
-double Bezier::initialize_covariance(){
-
-	this -> v_i_norm_sq.clear();
-	this -> epsilons.clear();
-
-	unsigned int N_C = this -> control_points.size();
-
-	arma::mat H_mat = arma::zeros<arma::mat>(3*N_C, 3*N_C);
-	arma::mat N_mat = arma::zeros<arma::mat>(3*N_C, 3*N_C);
-
-	for (unsigned int i = 0; i < this -> footpoints.size(); ++i){
-
-		const Footpoint & footpoint = this -> footpoints[i];
-		const arma::vec::fixed<3> & dir = footpoint.n;
-
-		arma::mat A = RBK::tilde(dir) * partial_bezier(footpoint.u,footpoint.v);
-		arma::mat AAA = A * arma::inv(A .t() * A);
-		arma::mat M = arma::zeros<arma::mat>(3 * N_C,3);
-		arma::mat Ck_dBkdchi = arma::zeros<arma::mat>(3,2);
-		arma::vec v_i_norm_sq_vec = arma::zeros<arma::vec>(N_C);
-
-		for (unsigned int k = 0; k < N_C; ++k){
-			auto indices = this -> forw_table[k];
-			Ck_dBkdchi += this -> owning_shape -> get_point_coordinates(this -> control_points[k])  * partial_bernstein(footpoint.u, footpoint.v,std::get<0>(indices) ,  std::get<1>(indices), this -> n);
-			M.submat( 3 * k ,0, 3 * k + 2,2) = bernstein(footpoint.u, footpoint.v,std::get<0>(indices),std::get<1>(indices),n)  * arma::eye<arma::mat>(3,3);
-		}
-
-		arma::mat K =  RBK::tilde(dir) * AAA * Ck_dBkdchi.t();
-		arma::mat J = M * (arma::eye<arma::mat>(3,3) + K);
-		arma::vec v_i = J * dir;
-
-		for (unsigned int k = 0; k < N_C; ++k){
-			v_i_norm_sq_vec(k) = arma::dot(v_i.rows(3 * k,3 * k + 2),v_i.rows(3 * k,3 * k + 2));
-		}
-
-
-		double epsilon_i = arma::dot(dir,footpoint.Ptilde - footpoint.Pbar);
-
-		this -> epsilons.push_back(epsilon_i);
-		this -> v_i_norm_sq.push_back(v_i_norm_sq_vec);
-
-		N_mat += epsilon_i * epsilon_i * v_i * v_i.t() / std::pow(arma::dot(v_i,v_i),2);
-		H_mat += v_i * v_i.t() / arma::dot(v_i,v_i);
-
-	}
-
-	// A-priori covariance
-	arma::vec N_mat_vec = arma::vectorise(N_mat);
-	arma::vec H_mat_vec = arma::vectorise(H_mat);
-
-	double alpha = arma::dot(H_mat_vec,N_mat_vec) /  arma::dot(H_mat_vec,H_mat_vec);
-
-	return alpha;
-
-}
-
 arma::mat Bezier::get_P_X() const{
 	return this -> P_X;
 }
 
-
-void Bezier::train_patch_covariance(){
-
-	unsigned int N_C = this -> control_points.size();
-	unsigned int N_iter = 30 ;
-
-	// The initial guess for the covariance is computed.
-	double alpha = this -> initialize_covariance();
-
-	arma::vec L = arma::ones<arma::vec>(N_C) * std::log(alpha);	
-	arma::vec lower_bounds =  L - 1;
-	arma::vec upper_bounds = L + 1;	
-
-
-
-	// The covariance is refined by a particle-in-swarm optimizer
-	Psopt<Bezier *> psopt(
-		Bezier::compute_log_likelihood_block_diagonal, 
-		lower_bounds,
-		upper_bounds, 
-		200,
-		N_iter,
-		this);
-
-	psopt.run(true,0);
-
-	L = psopt.get_result();
-
-	
-	this -> P_X = arma::diagmat(arma::exp(arma::vectorise(arma::repmat(L,1,3),1)));
-
-	this -> P_X_param = L;
-	
-	#if BEZIER_DEBUG_TRAINING
-	std::cout << "-- Initial guess: " << std::log(alpha) << std::endl;
-	std::cout << "-- Initial log-likelihood: " << Bezier::compute_log_likelihood_block_diagonal(std::log(alpha) * arma::ones<arma::vec>(N_C), this) << std::endl;
-
-	std::cout << "-- Final parametrization: " << L.t() << std::endl;
-	std::cout << "-- Final log-likelihood: " << Bezier::compute_log_likelihood_block_diagonal(L, this) << std::endl;
-
-
-	arma::vec L_correct_shape = arma::vectorise(arma::repmat(L,1,3),1).t();
-	std::cout << "-- Final covariance: " << std::endl;
-	std::cout << this -> P_X << std::endl;
-
-	#endif
-	
-
-}
-
-
-
-
-
-
-
-void Bezier::add_footpoint(Footpoint footpoint){
-	this -> footpoints.push_back(footpoint);
-}
-
-bool Bezier::has_footpoints() const{
-	return (this -> footpoints.size()!= 0);
-}
-
-void Bezier::reset_footpoints(){
-	this -> footpoints.clear();
-}
-
-
-double Bezier::compute_log_likelihood_block_diagonal(const arma::vec & L,
-	Bezier * patch,int verbose_level){
-
-	// All the footpoints are processed
-	double log_likelihood = 0;
-
-	const std::vector<double> & epsilons = patch -> get_epsilons();
-	const std::vector<arma::vec> & v_i_norm_sq = patch -> get_v_i_norm_sq();
-
-	for (unsigned int i = 0; i <  v_i_norm_sq.size(); ++i){
-		
-		double sigma_i_2 =  arma::sum(v_i_norm_sq.at(i) % arma::exp(L));
-		log_likelihood += - std::log(sigma_i_2) - std::pow(epsilons[i],2) / sigma_i_2;
-	}
-
-
-	return log_likelihood;
-
-}
-
-
-arma::mat::fixed<3,3> Bezier::covariance_surface_point(
-	const double u,
-	const double v,
-	const arma::vec & dir,
-	const arma::mat & P_X ) const{
-
-	arma::mat A = RBK::tilde(dir) * partial_bezier(u,v);
-	arma::mat AAA;
-
-	try{
-		AAA = A * arma::inv(A .t() * A);
-	}
-	catch (std::runtime_error & e){
-		AAA = 1e10 * arma::ones<arma::mat>(3,2);
-	}
-
-	arma::mat M = arma::zeros<arma::mat>(3 * this -> control_points.size(),3);
-	arma::mat Ck_dBkdchi = arma::zeros<arma::mat>(3,2);
-	for (unsigned int k = 0; k < this -> control_points.size(); ++k){
-
-		auto indices = this -> forw_table[k];
-
-		Ck_dBkdchi += this -> owning_shape -> get_point_coordinates(this -> control_points[k])  * partial_bernstein(u, v,std::get<0>(indices) ,  std::get<1>(indices), this -> n);
-		M.submat( 3 * k ,0, 3 * k + 2,2) = bernstein(u, v,std::get<0>(indices),std::get<1>(indices),n)  * arma::eye<arma::mat>(3,3);
-	}
-
-
-	arma::mat K =  RBK::tilde(dir) * AAA * Ck_dBkdchi.t();
-	arma::mat J = M * (arma::eye<arma::mat>(3,3) + K);
-	
-	
-	return J.t() * P_X * J;
-	
-
-
-}
-
-
-arma::mat::fixed<3,3> Bezier::covariance_surface_point(
-	const double u,
-	const double v,
-	const arma::vec & dir) const{
-
-	arma::mat A = RBK::tilde(dir) * partial_bezier(u,v);
-	arma::mat AAA;
-
-	try{
-		AAA = A * arma::inv(A .t() * A);
-	}
-	catch (std::runtime_error & e){
-		AAA = 1e10 * arma::ones<arma::mat>(3,2);
-	}
-
-	arma::mat M = arma::zeros<arma::mat>(3 * this -> control_points.size(),3);
-
-	arma::mat Ck_dBkdchi = arma::zeros<arma::mat>(3,2);
-	
-	for (unsigned int k = 0; k < this -> control_points.size(); ++k){
-		auto indices = this -> forw_table[k];
-
-		Ck_dBkdchi += this -> owning_shape -> get_point_coordinates(this -> control_points[k])  * partial_bernstein(u, v,std::get<0>(indices) ,  std::get<1>(indices), this -> n);
-		M.submat( 3 * k ,0, 3 * k + 2,2) = bernstein(u, v,std::get<0>(indices),std::get<1>(indices),n)  * arma::eye<arma::mat>(3,3);
-	}
-
-	arma::mat K =  RBK::tilde(dir) * AAA * Ck_dBkdchi.t();
-	arma::mat J = M * (arma::eye<arma::mat>(3,3) + K);
-	
-
-	return J.t() * this -> P_X * J;
-	
-
-
-}
 
 
 
@@ -796,30 +571,6 @@ void Bezier::compute_center(){
 
 }
 
-double Bezier::g(double u, double v) const{
-
-	arma::vec V = arma::zeros<arma::vec>(3);
-
-	for (unsigned int l = 0; l < this -> forw_table.size(); ++l){
-
-		for (unsigned int k = 0; k < this -> forw_table.size(); ++k){
-
-
-			double bl0 = bernstein(u,v,std::get<0>(this -> forw_table[l]) - 1,std::get<1>(this -> forw_table[l]), this -> n - 1);
-			double bl1 = bernstein(u,v,std::get<0>(this -> forw_table[l]),std::get<1>(this -> forw_table[l]), this -> n - 1);
-			double bk0 = bernstein(u,v,std::get<0>(this -> forw_table[k]),std::get<1>(this -> forw_table[k])-1, this -> n - 1);
-			double bk1 = bernstein(u,v,std::get<0>(this -> forw_table[k]),std::get<1>(this -> forw_table[k]), this -> n - 1);
-
-			V = V + (bl0 - bl1) * (bk0 - bk1) * arma::cross(this -> owning_shape -> get_point_coordinates(this -> control_points[l]),
-				this -> owning_shape -> get_point_coordinates(this -> control_points[k]));
-
-		}
-
-	}
-
-	return arma::norm(V);
-
-}
 
 int Bezier::combinations(int k, int n){
 

@@ -1,7 +1,6 @@
 #include <chrono>
 #include <assert.h>
 #include <ControlPoint.hpp>
-#include <KDTree.hpp>
 #include <ShapeModel.hpp>
 
 template <class PointType>
@@ -114,23 +113,6 @@ unsigned int ShapeModel<PointType>::get_NControlPoints() const {
 	return this -> control_points . size();
 }
 
-template <class PointType>
-std::shared_ptr<KDTreeShape> ShapeModel<PointType>::get_KDTreeShape() const {
-	return this -> kdt_facet;
-}
-
-template <class PointType>
-void ShapeModel<PointType>::construct_kd_tree_control_points(){
-
-	std::vector<int> indices;
-	for (int i =0; i < this -> get_NControlPoints(); ++i){
-			indices.push_back(i);
-	}
-
-	this -> kdt_control_points = std::make_shared< KDTree<ShapeModel,PointType> >(KDTree< ShapeModel,PointType> (this));
-	this -> kdt_control_points -> build(indices,0);
-
-}
 
 
 template <class PointType>

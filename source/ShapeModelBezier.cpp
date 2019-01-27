@@ -1,7 +1,6 @@
 #include "ShapeModelBezier.hpp"
 #include "ShapeModelTri.hpp"
 #include "ShapeModelImporter.hpp"
-#include "KDTreeShape.hpp"
 
 #pragma omp declare reduction (+ : arma::vec::fixed<6> : omp_out += omp_in)\
 initializer( omp_priv = arma::zeros<arma::vec>(6) )
@@ -54,7 +53,6 @@ ShapeModelBezier<PointType>::ShapeModelBezier(const ShapeModelTri<PointType> & s
 
 	}
 
-	this -> construct_kd_tree_control_points();
 	this -> populate_mass_properties_coefs_deterministics();
 	this -> populate_mass_properties_coefs_stochastics();
 
@@ -1071,13 +1069,6 @@ arma::vec::fixed<3> ShapeModelBezier<PointType>::get_dims(const double & volume,
 
 
 template <class PointType>
-bool ShapeModelBezier<PointType>::ray_trace(Ray * ray,bool outside){
-
-	return this -> kdt_facet -> hit(this -> get_KDTreeShape(),ray,false,this);
-	
-}
-
-template <class PointType>
 void ShapeModelBezier<PointType>::assemble_mapping_matrices(){
 
 	this -> elements_to_volume_mapping_matrices.clear();
@@ -1818,103 +1809,6 @@ void ShapeModelBezier<PointType>::save(std::string path) {
 		}
 
 	}
-
-}
-
-
-template <class PointType>
-void ShapeModelBezier<PointType>::construct_kd_tree_shape(){
-
-
-	std::chrono::time_point<std::chrono::system_clock> start, end;
-	start = std::chrono::system_clock::now();
-
-
-	// The KD tree is constructed by building 
-	// an "enclosing" (not strictly-speaking) KD tree from the bezier shape
-
-	// An inverse map going from vertex pointer to global indices is created
-	// Note that the actual vertices on the shape model will not be be 
-	// the control points, but the points lying on the bezier patch
- 	// they support
-
-
-	std::vector<std::vector<int> > vertices_in_facets;
-	std::vector<int> facets_super_element;
-
-	for (unsigned int e = 0; e < this -> get_NElements(); ++e){
-
-		const Bezier & patch = this -> get_element(e);
-
-	// The facets are created
-
-		for (unsigned int l = 0; l < patch . get_degree(); ++l){
-
-			for (unsigned int t = 0; t < l + 1; ++t){
-
-				if (t <= l){
-
-					int v0 = patch . get_point_global_index(patch . get_degree() - l,l - t);
-					int v1 = patch . get_point_global_index(patch . get_degree() - l - 1,l - t + 1);
-					int v2 = patch . get_point_global_index(patch . get_degree() - l - 1,l-t);
-
-					std::vector<int> vertices_in_facet;
-					vertices_in_facet.push_back(v0);
-					vertices_in_facet.push_back(v1);
-					vertices_in_facet.push_back(v2);
-					
-					facets_super_element.push_back(e);
-					vertices_in_facets.push_back(vertices_in_facet);
-
-				}
-
-				if (t > 0 ){
-
-					int v0 = patch . get_point_global_index(patch . get_degree() - l,l-t);
-					int v1 = patch . get_point_global_index(patch . get_degree() - l,l - t + 1 );
-					int v2 = patch . get_point_global_index(patch . get_degree() - l -1,l - t + 1);
-
-					std::vector<int> vertices_in_facet;
-					vertices_in_facet.push_back(v0);
-					vertices_in_facet.push_back(v1);
-					vertices_in_facet.push_back(v2);
-					
-					facets_super_element.push_back(e);
-					vertices_in_facets.push_back(vertices_in_facet);
-
-
-				}
-
-			}
-
-		}
-	}
-
-	// We know have everything we need to create the enclosing shape
-	this -> enclosing_polyhedron = std::make_shared<ShapeModelTri<ControlPoint>>(ShapeModelTri<ControlPoint>(vertices_in_facets,
-		facets_super_element,this -> control_points));
-
-
-	for(int e = 0; e < this -> enclosing_polyhedron -> get_NElements(); ++e){
-		Facet & facet =  this -> enclosing_polyhedron -> get_element(e);
-		facet.set_owning_shape(this -> enclosing_polyhedron.get());
-	}
-
-
-
-	std::vector<int> facets;
-	for (int e = 0; e < this -> enclosing_polyhedron -> get_NElements(); ++e){
-		facets.push_back(e);
-	}
-
-
-	this -> kdt_facet = std::make_shared<KDTreeShape>(KDTreeShape(this -> enclosing_polyhedron.get()));
-	this -> kdt_facet -> build(facets, 0);
-
-	end = std::chrono::system_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end - start;
-
-	std::cout << "\n Elapsed time during Bezier KDTree construction : " << elapsed_seconds.count() << "s\n\n";
 
 }
 

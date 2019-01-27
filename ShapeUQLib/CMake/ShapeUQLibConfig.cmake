@@ -20,14 +20,14 @@
 # SOFTWARE.
 #
 
-set(RBK_INCLUDE_DIR /usr/local/include)
+set(SHAPEUQLIB_INCLUDE_DIR /usr/local/include)
 
 if (APPLE)
-	set(RBK_LIBRARY /usr/local/lib/libRigidBodyKinematics.dylib)
+	set(SHAPEUQLIB_LIBRARY /usr/local/lib/libShapeUQLib.dylib)
 elseif(UNIX AND NOT APPLE)
-	set(RBK_LIBRARY /usr/local/lib/libRigidBodyKinematics.so)
+	set(SHAPEUQLIB_LIBRARY /usr/local/lib/libShapeUQLib.so)
 else()
 	message(FATAL_ERROR "Unsupported platform")
 endif()
 
-message("-- Found RigidBodyKinematics: " ${RBK_LIBRARY})
+message("-- Found ShapeUQLib: " ${SHAPEUQLIB_LIBRARY})

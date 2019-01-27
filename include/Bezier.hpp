@@ -4,7 +4,6 @@
 #include <armadillo>
 #include "ControlPoint.hpp"
 #include "Element.hpp"
-#include "Footpoint.hpp"
 
 #include <boost/math/special_functions/factorials.hpp>
 #include <memory>
@@ -81,13 +80,6 @@ public:
 	@return point at the surface of the bezier patch
 	*/
 	arma::vec get_normal_coordinates(const double u, const double v) const;
-
-
-	/**
-	Returns shape fitting residuals standard deviation
-	@return standard deviation of fitting residuals
-	*/
-	double get_fitting_residuals() const;
 
 
 	/**
@@ -171,22 +163,6 @@ public:
 
 	void set_P_X(arma::mat P_X){this -> P_X = P_X;}
 
-
-	/**
-	Returns stored footpoints
-	*/
-	const std::vector<Footpoint> & get_footpoints() const {return this -> footpoints;}
-
-	/**
-	Returns stored shape fitting residuals
-	*/
-	const std::vector<double> & get_epsilons() const {return this -> epsilons;}
-
-	/**
-	Returns stored mapping vectors for covariance training
-	*/
-	const std::vector<arma::vec> & get_v_i_norm_sq() const{return this ->v_i_norm_sq;}
-
 	/**
 	Returns the 3x3 covariance matrix
 	tracking the uncertainty in the location of
@@ -220,15 +196,6 @@ public:
 		const double v,
 		const arma::vec & dir,
 		const arma::mat & P_X) const;
-
-
-
-	
-	/**
-	Computes the patch covariance P_X maximizing the likelihood function 
-	associated to the stored footpoints
-	*/
-	void train_patch_covariance();
 
 	/**
 	Sets the covariance parametrization to the prescribed values
@@ -319,28 +286,6 @@ public:
 		const int j, 
 		const int n) const;
 
-	
-	static double compute_log_likelihood_block_diagonal(const arma::vec &  L,
-		Bezier * args,
-		int verbose_level = 0);
-
-	/**
-	Add footpoint to Bezier patch for the covariance training phase
-	@param footpoint structure holding Ptilde/Pbar/n/u/v
-	*/
-	void add_footpoint(Footpoint footpoint);
-
-	/**
-	Returns true if the patch has training points already assigned, false otherwise
-	@return true if the patch has training points already assigned, false otherwise
-	*/
-	bool has_footpoints() const;
-
-
-	/**
-	Erases the training data
-	*/
-	void reset_footpoints();
 
 
 	/**
@@ -476,24 +421,11 @@ protected:
 	virtual void compute_area();
 	virtual void compute_center();
 
-
-
 	static double Sa_b(const int a, const int b);
 	static double bernstein_coef(const int i , const int j , const int n);
 
 
 	void construct_index_tables();
-
-	double initialize_covariance();
-
-
-	/**
-	Evaluates the quadrature function for surface area computation
-	@param u first barycentric coordinate
-	@param v second barycentric coordinate (w = 1 - u - v)
-	@param g as in A = \int g du dv 
-	*/
-	double g(double u, double v) const;
 
 
 
@@ -540,8 +472,6 @@ protected:
 
 
 	arma::mat P_X;
-	std::vector<Footpoint> footpoints;
-	std::vector<arma::vec> v_i_norm_sq;
 	std::vector<double> epsilons;
 	arma::vec P_X_param;
 
