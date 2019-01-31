@@ -51,6 +51,12 @@ public:
 	void initialize_info_mat();
 	void initialize_dX_bar();
 
+
+
+ 
+
+
+
 	arma::mat random_sampling(unsigned int N,const arma::mat & R = 1e-6 * arma::eye<arma::mat>(3,3)) const;
 
 
@@ -135,13 +141,11 @@ public:
 		arma::mat & results_dims,
 		std::string output_path);
 
-
 	/**
 	Return the standard deviation in the volume
 	@return standard deviation in shape volume
 	*/
 	double get_volume_sd() const;
-
 
 	/**
 	Return the center of mass covariance 
@@ -157,8 +161,6 @@ public:
 
 
 	arma::mat get_mrp_cov() const{return this -> P_sigma;}
-
-
 	arma::mat get_P_moments() const{return this -> P_moments;}
 	arma::mat get_P_Y() const{return this -> P_Y;}
 

@@ -19,6 +19,8 @@ ShapeModelBezier<PointType>::ShapeModelBezier(std::string ref_frame_name,
 
 }
 
+
+
 template <class PointType>
 ShapeModelBezier<PointType>::ShapeModelBezier(const ShapeModelTri<PointType> & shape_model,
 	std::string ref_frame_name,
@@ -131,7 +133,7 @@ void ShapeModelBezier<PointType>::update_mass_properties() {
 
 	end = std::chrono::system_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end - start;
-	std::cout << "elapsed time in ShapeModelBezier<PointType>::update_mass_properties: " << elapsed_seconds.count() << " s"<< std::endl;
+	// std::cout << "elapsed time in ShapeModelBezier<PointType>::update_mass_properties: " << elapsed_seconds.count() << " s"<< std::endl;
 
 
 }
@@ -489,24 +491,21 @@ void ShapeModelBezier<PointType>::compute_all_statistics(){
 
 	this -> save_connectivity(connected_elements);
 
-	std::cout << "\n- Computing all statistics over the " << connected_elements.size() << " surface element combinations ...\n";
+	// std::cout << "\n- Computing all statistics over the " << connected_elements.size() << " surface element combinations ...\n";
 
 	boost::progress_display progress(connected_elements.size()) ;
 	
-	#if !__APPLE__
 	#pragma omp parallel for reduction(+:vol_sd_temp), reduction(+:cm_cov_temp), reduction(+:P_I_temp), reduction(+:P_M_I_temp)
-	#endif
-
 	for (unsigned int k = 0; k < connected_elements.size(); ++k) {
 
 		const Bezier & patch_e = this -> elements[connected_elements[k].first];
 		const Bezier & patch_f = this -> elements[connected_elements[k].second];
 
-		vol_sd_temp += this -> compute_patch_pair_vol_sd_contribution(patch_e,patch_f) ;
-
-		cm_cov_temp += this -> compute_patch_pair_cm_cov_contribution(patch_e,patch_f) ;
+		vol_sd_temp += this -> compute_patch_pair_vol_sd_contribution(patch_e,patch_f);
+		cm_cov_temp += this -> compute_patch_pair_cm_cov_contribution(patch_e,patch_f);
 		P_I_temp += this -> compute_patch_pair_PI_contribution(patch_e,patch_f);
 		P_M_I_temp += this -> compute_patch_pair_P_MI_contribution(patch_e,patch_f);
+
 		++progress;
 
 	}
@@ -978,7 +977,7 @@ void ShapeModelBezier<PointType>::run_monte_carlo(int N,
 
 	arma::mat all_deviations(3 * this -> get_NControlPoints(),N);
 
-	std::cout << "Drawing random deviations...\n";
+	// std::cout << "Drawing random deviations...\n";
 	boost::progress_display progress_display_deviations(N) ;
 
 	for (int iter = 0; iter < N; ++iter){
@@ -1079,7 +1078,7 @@ void ShapeModelBezier<PointType>::assemble_mapping_matrices(){
 	this -> elements_to_cm_mapping_matrices.resize(this -> elements.size());
 	this -> elements_to_inertia_mapping_matrices.resize(this -> elements.size());
 
-	std::cout << "Assembling mapping matrices\n";
+	// std::cout << "Assembling mapping matrices\n";
 	for (int e = 0; e < this -> elements.size(); ++e){
 
 		const Bezier & patch_e = this -> elements[e];
@@ -1178,7 +1177,7 @@ void ShapeModelBezier<PointType>::populate_mass_properties_coefs_stochastics(){
 	this -> P_MI_indices_coefs_table.clear();
 
 	int n = this -> get_degree();
-	std::cout << "- Shape degree: " << n << std::endl;
+	// std::cout << "- Shape degree: " << n << std::endl;
 
 
 	std::vector<std::vector<int> >  base_vector;
@@ -1228,7 +1227,7 @@ void ShapeModelBezier<PointType>::populate_mass_properties_coefs_stochastics(){
 	}
 
 
-	std::cout << "- Volume SD coefficients: " << this -> volume_sd_indices_coefs_table.size() << std::endl;
+	// std::cout << "- Volume SD coefficients: " << this -> volume_sd_indices_coefs_table.size() << std::endl;
 
 	
 
@@ -1340,7 +1339,7 @@ void ShapeModelBezier<PointType>::populate_mass_properties_coefs_stochastics(){
 		}
 
 	}
-	std::cout << "- CM cov coefficients : " << this -> cm_cov_1_indices_coefs_table.size() + this -> cm_cov_2_indices_coefs_table.size() << std::endl;
+	// std::cout << "- CM cov coefficients : " << this -> cm_cov_1_indices_coefs_table.size() + this -> cm_cov_2_indices_coefs_table.size() << std::endl;
 
 
 
@@ -1455,8 +1454,8 @@ void ShapeModelBezier<PointType>::populate_mass_properties_coefs_stochastics(){
 	}
 
 
-	std::cout << "- P_I stats coefficients: " << this -> P_I_indices_coefs_table.size() << std::endl;
-	std::cout << "- P_MI stats coefficients: " <<  this -> P_MI_indices_coefs_table.size() << std::endl;
+	// std::cout << "- P_I stats coefficients: " << this -> P_I_indices_coefs_table.size() << std::endl;
+	// std::cout << "- P_MI stats coefficients: " <<  this -> P_MI_indices_coefs_table.size() << std::endl;
 
 }
 
@@ -1470,7 +1469,7 @@ void ShapeModelBezier<PointType>::populate_mass_properties_coefs_deterministics(
 
 
 	int n = this -> get_degree();
-	std::cout << "- Shape degree: " << n << std::endl;
+	// std::cout << "- Shape degree: " << n << std::endl;
 
 
 	std::vector<std::vector<int> >  base_vector;
@@ -1499,7 +1498,7 @@ void ShapeModelBezier<PointType>::populate_mass_properties_coefs_deterministics(
 		}
 	}
 
-	std::cout << "- Volume coefficients: " << this -> volume_indices_coefs_table.size() << std::endl;
+	// std::cout << "- Volume coefficients: " << this -> volume_indices_coefs_table.size() << std::endl;
 
 	// CM
 	// i
@@ -1540,7 +1539,7 @@ void ShapeModelBezier<PointType>::populate_mass_properties_coefs_deterministics(
 	}
 
 
-	std::cout << "- CM coefficients: " << this -> cm_gamma_indices_coefs_table.size() << std::endl;
+	// std::cout << "- CM coefficients: " << this -> cm_gamma_indices_coefs_table.size() << std::endl;
 
 	// Inertia
 	index_vectors.clear();
@@ -1575,7 +1574,7 @@ void ShapeModelBezier<PointType>::populate_mass_properties_coefs_deterministics(
 
 
 
-	std::cout << "- Inertia coefficients: " << this -> inertia_indices_coefs_table.size() << std::endl;
+	// std::cout << "- Inertia coefficients: " << this -> inertia_indices_coefs_table.size() << std::endl;
 
 }
 
@@ -1670,9 +1669,9 @@ void ShapeModelBezier<PointType>::compute_point_covariances(double sigma_sq,doub
 
 	}
 
-	std::cout << "Finding correlated elements in shape\n";
+	// std::cout << "Finding correlated elements in shape\n";
 	this -> find_correlated_elements();
-	std::cout << "Done finding correlated elements in shape\n";
+	// std::cout << "Done finding correlated elements in shape\n";
 
 
 }
