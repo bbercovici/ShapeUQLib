@@ -28,10 +28,7 @@
 
 cmake_minimum_required(VERSION 3.0)
 
-
 set(LIB_NAME "ShapeUQLib" CACHE STRING "Name of library to be created.")
-
-
 
 project(${LIB_NAME})
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/source/cmake)
@@ -42,10 +39,6 @@ set(CMAKE_CXX_FLAGS "-std=c++14")
 # Include directories
 include_directories(include)
 
-# Find Boost
-find_package(Boost COMPONENTS filesystem system REQUIRED) 
-include_directories(${Boost_INCLUDE_DIRS}) 
-
 # Find Armadillo 
 find_package(Armadillo REQUIRED )
 include_directories(${ARMADILLO_INCLUDE_DIRS})
@@ -54,22 +47,12 @@ include_directories(${ARMADILLO_INCLUDE_DIRS})
 find_package(RigidBodyKinematics REQUIRED PATHS ${RBK_LOC})
 include_directories(${RBK_INCLUDE_DIR} )
 
-# Find VTK Package
-find_package(VTK REQUIRED PATHS ${VTK_PATH})
-include(${VTK_USE_FILE})
-
 # Find OpenMP
 find_package(OpenMP)
 if(OPENMP_FOUND)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
-
-# Find SbgatCore 
-find_package(SbgatCore REQUIRED PATHS ${SBGAT_LOC})
-include_directories(${SBGATCORE_INCLUDE_HEADER})
-
-
 
 # Add source files in root directory
 add_library(${LIB_NAME} SHARED
@@ -90,7 +73,6 @@ set(library_dependencies
 	${ARMADILLO_LIBRARIES}
 	${Boost_LIBRARIES}
 	${RBK_LIBRARY}
-	${VTK_LIBRARIES}
 	)
 
 

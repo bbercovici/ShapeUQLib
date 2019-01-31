@@ -1,7 +1,5 @@
 #include <Bezier.hpp>
 #include <ShapeModel.hpp>
-
-#include <vtkMath.h>
 #include <cassert>
 #define BEZIER_DEBUG_TRAINING 0
 
@@ -96,7 +94,9 @@ double Bezier::triple_product(const int i ,const int j ,const int k ,const int l
 	double const * Cj =  this -> owning_shape -> get_point_coordinates(this -> control_points[this -> rev_table.at(j_)]).colptr(0);
 	double const * Ck =  this -> owning_shape -> get_point_coordinates(this -> control_points[this -> rev_table.at(k_)]).colptr(0);
 
-	return vtkMath::Determinant3x3(Ci,Cj,Ck);
+	return Ci[0] * Cj[1] * Ck[2] + Cj[0] * Ck[1] * Ci[2] + Ck[0] * Ci[1] * Cj[2] -
+	Ci[0] * Ck[1] * Cj[2] - Cj[0] * Ci[1] * Ck[2] - Ck[0] * Cj[1] * Ci[2];
+
 
 }
 
@@ -141,9 +141,16 @@ void Bezier::quadruple_product(double * result,const int i ,const int j ,const i
 	result[1] = Ci[1];
 	result[2] = Ci[2];
 
+	double Cx = Ck[1] * Cl[2] - Ck[2] * Cl[1];
+	double Cy = Ck[2] * Cl[0] - Ck[0] * Cl[2];
+	double Cz = Ck[0] * Cl[1] - Ck[1] * Cl[0];
+	cp[0] = Cx; cp[1] = Cy; cp[2] = Cz;
 
-	vtkMath::Cross(Ck,Cl,cp);
-	vtkMath::MultiplyScalar(result,vtkMath::Dot(Cj,cp));
+	double dot_Cj_cp = Cj[0] * cp[0] + Cj[1] * cp[1]+ Cj[2] * cp[2];
+
+	result[0] *= dot_Cj_cp;
+	result[1] *= dot_Cj_cp;
+	result[2] *= dot_Cj_cp;
 
 
 }
