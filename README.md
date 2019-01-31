@@ -1,6 +1,10 @@
 # ShapeUQLib
 
-Implementation of an analytical shape uncertainty and inertia statistics formulation tailored for small body analyses. This library is not stand alone and is meant to be called by [SBGAT](https://github.com/bbercovici/SBGAT). Implementation and derivation details can be found  
+Implementation of an analytical shape uncertainty and inertia statistics formulation tailored for small body analyses. This library is not stand alone and is meant to be called by [SBGAT](https://github.com/bbercovici/SBGAT). Implementation and derivation details can be found in 
+
+```
+Bercovici, B., & Mcmahon, J. W. (n.d.). Inertia Parameter Statistics of An Uncertain Small Body Shape (Under Review). Icarus
+```
 
 ## Requires
 1. Armadillo
