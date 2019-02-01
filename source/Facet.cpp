@@ -1,6 +1,8 @@
 #include <memory>
-#include <ShapeModel.hpp>
-#include <Facet.hpp>
+#include <ShapeUQLib/ShapeModel.hpp>
+#include <ShapeUQLib/Facet.hpp>
+
+
 
 Facet::Facet(std::vector<int> & vertices,ShapeModel<ControlPoint> * owning_shape) : Element(vertices,owning_shape){
 

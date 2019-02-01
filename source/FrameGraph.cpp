@@ -1,4 +1,5 @@
-#include "FrameGraph.hpp"
+#include <ShapeUQLib/FrameGraph.hpp>
+
 
 FrameGraph::FrameGraph() {
 

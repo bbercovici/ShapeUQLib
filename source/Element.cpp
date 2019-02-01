@@ -1,6 +1,7 @@
-#include "Element.hpp"
-#include "ControlPoint.hpp"
-#include "ShapeModel.hpp"
+#include <ShapeUQLib/Element.hpp>
+#include <ShapeUQLib/ShapeModel.hpp>
+#include <ShapeUQLib/ControlPoint.hpp>
+
 
 
 Element::Element(std::vector<int> & control_points,ShapeModel<ControlPoint> * owning_shape) {

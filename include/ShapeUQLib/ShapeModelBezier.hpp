@@ -1,11 +1,12 @@
 #ifndef HEADER_SHAPEMODELBEZIER
 #define HEADER_SHAPEMODELBEZIER
 
-#include <ShapeModel.hpp>
-#include <Bezier.hpp>
-
 #include <array>
-#include <ShapeModelTri.hpp>
+#include <ShapeUQLib/ShapeModelTri.hpp>
+#include <ShapeUQLib/ShapeModel.hpp>
+#include <ShapeUQLib/Bezier.hpp>
+
+
 
 
 

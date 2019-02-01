@@ -1,9 +1,9 @@
 #ifndef FRAMEGRAPH_HEADER
 #define FRAMEGRAPH_HEADER
 
-#include "RefFrame.hpp"
+#include <ShapeUQLib/RefFrame.hpp>
 #include <memory>
-#include "Adjacency_List.hpp"
+#include <ShapeUQLib/Adjacency_List.hpp>
 
 
 class FrameGraph {

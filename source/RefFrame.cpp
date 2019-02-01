@@ -1,4 +1,4 @@
-#include "RefFrame.hpp"
+#include <ShapeUQLib/RefFrame.hpp>
 
 RefFrame::RefFrame(std::string name) {
 

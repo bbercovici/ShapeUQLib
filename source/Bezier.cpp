@@ -1,5 +1,10 @@
-#include <Bezier.hpp>
-#include <ShapeModel.hpp>
+#include <ShapeUQLib/Bezier.hpp>
+#include <ShapeUQLib/ShapeModel.hpp>
+
+
+
+
+
 #include <cassert>
 #define BEZIER_DEBUG_TRAINING 0
 

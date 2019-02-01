@@ -1,7 +1,12 @@
-#include "ControlPoint.hpp"
-#include "Bezier.hpp"
-#include "Facet.hpp"
-#include "ShapeModel.hpp"
+#include <ShapeUQLib/Element.hpp>
+#include <ShapeUQLib/Bezier.hpp>
+#include <ShapeUQLib/ShapeModel.hpp>
+#include <ShapeUQLib/Facet.hpp>
+#include <ShapeUQLib/ControlPoint.hpp>
+
+
+
+
 
 ControlPoint::ControlPoint(ShapeModel<ControlPoint> * owning_shape){
 	this -> owning_shape = owning_shape;

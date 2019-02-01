@@ -1,7 +1,11 @@
 #include <chrono>
 #include <assert.h>
-#include <ControlPoint.hpp>
-#include <ShapeModel.hpp>
+
+#include <ShapeUQLib/ShapeModel.hpp>
+#include <ShapeUQLib/ControlPoint.hpp>
+
+
+
 
 template <class PointType>
 ShapeModel<PointType>::ShapeModel() {

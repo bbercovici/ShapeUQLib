@@ -1,7 +1,6 @@
 #ifndef HEADER_CONTROL_POINT
 #define HEADER_CONTROL_POINT
 #include <armadillo>
-#include "Element.hpp"
 #include <memory>
 
 #include <set>

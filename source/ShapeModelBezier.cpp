@@ -1,5 +1,8 @@
-#include "ShapeModelBezier.hpp"
-#include "ShapeModelTri.hpp"
+#include <ShapeUQLib/ShapeModelTri.hpp>
+#include <ShapeUQLib/ShapeModelBezier.hpp>
+
+
+
 
 #pragma omp declare reduction (+ : arma::vec::fixed<6> : omp_out += omp_in)\
 initializer( omp_priv = arma::zeros<arma::vec>(6) )
@@ -141,7 +144,7 @@ void ShapeModelBezier<PointType>::compute_volume(){
 	
 	double volume = 0;
 
-	#pragma omp parallel for reduction(+:volume) if (USE_OMP_SHAPE_MODEL)
+	#pragma omp parallel for reduction(+:volume)
 	for (unsigned int el_index = 0; el_index < this -> elements.size(); ++el_index) {
 		
 		const Bezier & patch = this -> elements[el_index];	
@@ -210,6 +213,9 @@ void ShapeModelBezier<PointType>::compute_center_of_mass(){
 
 	#pragma omp parallel for reduction(+:cx,cy,cz)
 	for (unsigned int el_index = 0; el_index < this -> elements.size(); ++el_index) {
+
+
+		std::cout << omp_get_num_threads() << std::endl;
 
 		const Bezier & patch = this -> elements[el_index];	
 

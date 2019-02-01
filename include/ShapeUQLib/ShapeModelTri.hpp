@@ -10,8 +10,12 @@
 #include <map>
 #include <limits>
 #include <cassert>
-#include <ShapeModel.hpp>
-#include <Facet.hpp>
+
+
+#include <ShapeUQLib/ShapeModel.hpp>
+#include <ShapeUQLib/Facet.hpp>
+
+
 
 
 /**

@@ -1,8 +1,8 @@
 #ifndef HEADER_FACET
 #define HEADER_FACET
 #include <armadillo>
-#include "ControlPoint.hpp"
-#include "Element.hpp"
+#include <ShapeUQLib/ControlPoint.hpp>
+#include <ShapeUQLib/Element.hpp>
 
 #include <memory>
 #include <iostream>

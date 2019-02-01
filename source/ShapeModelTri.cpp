@@ -1,5 +1,9 @@
-#include "ShapeModelTri.hpp"
-#include "Facet.hpp"
+
+#include <ShapeUQLib/ShapeModelTri.hpp>
+#include <ShapeUQLib/Facet.hpp>
+
+
+
 
 #pragma omp declare reduction (+ : arma::vec::fixed<3> : omp_out += omp_in) \
 initializer( omp_priv = arma::zeros<arma::vec>(3) )
@@ -249,7 +253,7 @@ template <class PointType>
 void ShapeModelTri<PointType>::compute_volume() {
 	double volume = 0;
 
-	#pragma omp parallel for reduction(+:volume) if (USE_OMP_SHAPE_MODEL)
+	#pragma omp parallel for reduction(+:volume)
 	for (unsigned int facet_index = 0;facet_index < this -> elements.size();++facet_index) {
 
 		const std::vector<int> & vertices = this -> elements[facet_index].get_points();
@@ -276,7 +280,7 @@ void ShapeModelTri<PointType>::compute_center_of_mass() {
 	double cy = 0;
 	double cz = 0;
 
-	#pragma omp parallel for reduction (+:cx,cy,cz) if (USE_OMP_SHAPE_MODEL)
+	#pragma omp parallel for reduction (+:cx,cy,cz)
 	for (unsigned int facet_index = 0;facet_index < this -> elements.size();++facet_index) {
 
 		const std::vector<int> & vertices = this -> elements[facet_index].get_points();
@@ -317,7 +321,7 @@ void ShapeModelTri<PointType>::compute_inertia() {
 
 
 
-	# pragma omp parallel for reduction(+:P_xx,P_yy,P_zz,P_xy,P_xz,P_yz) if (USE_OMP_SHAPE_MODEL)
+	# pragma omp parallel for reduction(+:P_xx,P_yy,P_zz,P_xy,P_xz,P_yz)
 	for (unsigned int facet_index = 0;facet_index < this -> elements.size();++facet_index) {
 
 		const std::vector<int> & vertices = this -> elements[facet_index].get_points();
@@ -415,7 +419,7 @@ template <class PointType>
 void ShapeModelTri<PointType>::compute_surface_area() {
 	double surface_area = 0;
 
-	#pragma omp parallel for reduction(+:surface_area) if (USE_OMP_SHAPE_MODEL)
+	#pragma omp parallel for reduction(+:surface_area)
 	for (unsigned int facet_index = 0; facet_index < this -> elements.size(); ++facet_index) {
 
 		surface_area += this -> elements[facet_index].get_area();
