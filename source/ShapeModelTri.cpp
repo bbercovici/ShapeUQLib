@@ -319,8 +319,6 @@ void ShapeModelTri<PointType>::compute_inertia() {
 	double P_xz = 0;
 	double P_yz = 0;
 
-
-
 	# pragma omp parallel for reduction(+:P_xx,P_yy,P_zz,P_xy,P_xz,P_yz)
 	for (unsigned int facet_index = 0;facet_index < this -> elements.size();++facet_index) {
 
@@ -410,7 +408,10 @@ void ShapeModelTri<PointType>::compute_inertia() {
 		{ -P_xz, -P_yz, P_xx + P_yy}
 	};
 
-	this -> inertia = I;
+
+	this -> r_avg =  std::cbrt( 3./4. * this -> volume / arma::datum::pi ) ;
+	this -> inertia = I / (this -> volume * this -> r_avg * this -> r_avg);
+
 }
 
 

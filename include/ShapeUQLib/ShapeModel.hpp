@@ -298,6 +298,13 @@ protected:
 	double surface_area;
 
 
+	/**
+	Radius of sphere of equivalent volume
+	*/
+	double r_avg;
+
+
+
 
 
 };

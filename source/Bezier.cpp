@@ -518,10 +518,13 @@ arma::mat::fixed<3,2> Bezier::partial_bezier(
 	const double u,
 	const double v) const{
 
+
+
 	arma::mat::fixed<3,2> partials = arma::zeros<arma::mat>(3,2);
 	for (unsigned int l = 0; l < this -> control_points.size(); ++l){	
 		int i = std::get<0>(this -> forw_table.at(l));
 		int j = std::get<1>(this -> forw_table.at(l));
+
 
 		partials += this -> owning_shape -> get_point_coordinates(this -> control_points.at(l)) * Bezier::partial_bernstein(u,v,i,j,this -> n) ;
 	}

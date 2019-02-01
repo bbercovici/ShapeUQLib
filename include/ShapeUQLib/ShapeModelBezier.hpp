@@ -29,43 +29,17 @@ public:
 		FrameGraph * frame_graph);
 
 	
-	/**
-	Constructor
-	@param frame_graph Pointer to the graph storing
-	reference frame relationships
-	@param frame_graph Pointer to the reference frame graph
-	*/
-	ShapeModelBezier(std::string ref_frame_name,
-		FrameGraph * frame_graph);
-
-
-	std::shared_ptr<arma::mat> get_info_mat_ptr() const;
-	std::shared_ptr<arma::vec> get_dX_bar_ptr() const;
-
+	
 
 	/**
 	Updates the values of the center of mass, volume
 	*/
 	virtual void update_mass_properties();
 
-
-	void initialize_info_mat();
-	void initialize_dX_bar();
-
-
-
- 
-
-
-
-	arma::mat random_sampling(unsigned int N,const arma::mat & R = 1e-6 * arma::eye<arma::mat>(3,3)) const;
-
-
 	/**
 	Saves the shape model to an obj file as a polyhedron
 	*/
 	void save_to_obj(std::string path) const;
-
 
 	/**
 	Saves the shape model as a collection of Bezier patches
@@ -108,7 +82,15 @@ public:
 	Computes the inertia tensor of the shape model
 	*/
 	virtual void compute_inertia();
-	arma::mat::fixed<3,3> compute_inertia(const arma::vec & deviation) const;
+
+
+	/**
+	Computes the inertia tensor of the shape model after perturbing the control points locations 
+	by the prescribed deviation
+	@param volume_p volume of shape after perturbation has been applied
+	@return perturbed inertia
+	*/
+	arma::mat::fixed<3,3> compute_inertia(const double & volume_p,const arma::vec & deviation) const;
 
 
 	
@@ -221,10 +203,7 @@ protected:
 	std::vector<Bezier> elements;
 
 
-	void save_connectivity(const std::vector< std::pair<int,int> > & connected_elements) const;
 	void find_correlated_elements();
-
-
 
 	double compute_patch_pair_vol_sd_contribution(const Bezier & patch_e,const Bezier & patch_f) const;
 	arma::mat::fixed<3,3>  compute_patch_pair_cm_cov_contribution(const Bezier & patch_e,const Bezier & patch_f) const;
@@ -261,9 +240,6 @@ protected:
 	*/
 	static void build_bezier_base_index_vector(const int n,std::vector<std::vector<int> > & base_vector);
 
-
-
-	
 
 	void compute_P_Y();
 	void compute_P_MX();
@@ -335,7 +311,6 @@ protected:
 	arma::mat::fixed<3,3> P_XX() const ;
 	arma::mat::fixed<3,6> partial_X_partial_I() const;
 	arma::mat::fixed<4,4> partial_M_partial_Y() const;
-
 
 
 	arma::mat::fixed<3,3> P_ril_rjm(

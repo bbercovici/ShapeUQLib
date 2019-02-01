@@ -1,6 +1,5 @@
 #include <ShapeUQLib/ShapeModelTri.hpp>
 #include <ShapeUQLib/ShapeModelBezier.hpp>
-#include <omp.h>
 
 #pragma omp declare reduction (+ : arma::vec::fixed<6> : omp_out += omp_in)\
 initializer( omp_priv = arma::zeros<arma::vec>(6) )
@@ -8,17 +7,8 @@ initializer( omp_priv = arma::zeros<arma::vec>(6) )
 #pragma omp declare reduction (+ : arma::mat::fixed<3,3> : omp_out += omp_in)\
 initializer( omp_priv = arma::zeros<arma::mat>(3,3) )
 
-
 #pragma omp declare reduction (+ : arma::mat::fixed<6,6> : omp_out += omp_in)\
 initializer( omp_priv = arma::zeros<arma::mat>(6,6) )
-
-
-template <class PointType>
-ShapeModelBezier<PointType>::ShapeModelBezier(std::string ref_frame_name,
-	FrameGraph * frame_graph): ShapeModel<PointType>(ref_frame_name,frame_graph){
-
-}
-
 
 template <class PointType>
 ShapeModelBezier<PointType>::ShapeModelBezier(const ShapeModelTri<PointType> & shape_model,
@@ -54,6 +44,7 @@ ShapeModelBezier<PointType>::ShapeModelBezier(const ShapeModelTri<PointType> & s
 
 	}
 
+
 	this -> populate_mass_properties_coefs_deterministics();
 	this -> populate_mass_properties_coefs_stochastics();
 
@@ -63,54 +54,6 @@ ShapeModelBezier<PointType>::ShapeModelBezier(const ShapeModelTri<PointType> & s
 
 }
 
-
-template <class PointType>
-std::shared_ptr<arma::mat> ShapeModelBezier<PointType>::get_info_mat_ptr() const{
-	return this -> info_mat_ptr;
-}
-
-template <class PointType>
-std::shared_ptr<arma::vec> ShapeModelBezier<PointType>::get_dX_bar_ptr() const{
-	return this -> dX_bar_ptr;
-}
-
-template <class PointType>
-void ShapeModelBezier<PointType>::initialize_info_mat(){
-	unsigned int N = this -> control_points.size();
-	this -> info_mat_ptr = std::make_shared<arma::mat>(arma::eye<arma::mat>(3 * N,3 * N));
-}
-
-template <class PointType>
-void ShapeModelBezier<PointType>::initialize_dX_bar(){
-	unsigned int N = this -> control_points.size();
-	this -> dX_bar_ptr = std::make_shared<arma::vec>(arma::zeros<arma::vec>(3 * N));
-}
-
-
-template <class PointType>
-arma::mat ShapeModelBezier<PointType>::random_sampling(unsigned int N,const arma::mat & R) const{
-
-	arma::mat points = arma::zeros<arma::mat>(3,N);
-	arma::mat S = arma::chol(R,"lower");
-
-	// N points are randomly sampled from the surface of the shape model
-	// #pragma omp parallel for
-	for (unsigned int i = 0; i < N; ++i){
-
-		unsigned int element_index = arma::randi<arma::vec>( 1, arma::distr_param(0,this -> elements.size() - 1) ) (0);
-
-		const Bezier & patch = this -> elements[element_index];
-		arma::vec random = arma::randu<arma::vec>(2);
-		double u = random(0);
-		double v = (1 - u) * random(1);
-
-		points.col(i) = patch.evaluate(u,v) + S * arma::randn<arma::vec>(3) ;
-
-	}
-
-	return points;
-
-}
 
 
 template <class PointType>
@@ -162,8 +105,9 @@ void ShapeModelBezier<PointType>::compute_volume(){
 
 	}
 	this -> volume = volume;
-}
+	this -> r_avg =  std::cbrt( 3./4. * this -> volume / arma::datum::pi ) ;
 
+}
 
 template <class PointType>
 double ShapeModelBezier<PointType>::compute_volume(const arma::vec & deviation) const{
@@ -188,6 +132,8 @@ double ShapeModelBezier<PointType>::compute_volume(const arma::vec & deviation) 
 		}
 
 	}
+
+
 	return volume;
 }
 
@@ -211,9 +157,6 @@ void ShapeModelBezier<PointType>::compute_center_of_mass(){
 
 	#pragma omp parallel for reduction(+:cx,cy,cz)
 	for (unsigned int el_index = 0; el_index < this -> elements.size(); ++el_index) {
-
-
-		std::cout << omp_get_num_threads() << std::endl;
 
 		const Bezier & patch = this -> elements[el_index];	
 
@@ -319,12 +262,13 @@ void ShapeModelBezier<PointType>::compute_inertia(){
 		}
 
 	}
-	this -> inertia = inertia;
+
+	this -> inertia = inertia / (this -> volume * this -> r_avg * this -> r_avg);
 
 }
 
 template <class PointType>
-arma::mat::fixed<3,3> ShapeModelBezier<PointType>::compute_inertia(const arma::vec & deviation) const{
+arma::mat::fixed<3,3> ShapeModelBezier<PointType>::compute_inertia(const double & volume_perturbed, const arma::vec & deviation) const{
 
 	arma::mat::fixed<3,3> inertia = arma::zeros<arma::mat>(3,3);
 
@@ -356,7 +300,11 @@ arma::mat::fixed<3,3> ShapeModelBezier<PointType>::compute_inertia(const arma::v
 		}
 
 	}
-	return inertia;
+
+	double r_avg_p =  std::cbrt( 3./4. * volume_perturbed / arma::datum::pi ) ;
+
+
+	return inertia / (volume_perturbed * r_avg_p * r_avg_p);
 
 }
 
@@ -364,13 +312,15 @@ template <class PointType>
 arma::vec::fixed<3> ShapeModelBezier<PointType>::get_point_normal_coordinates(unsigned int i) const{
 
 	auto owning_elements = this -> control_points[i].get_owning_elements();
+
 	arma::vec::fixed<3> n = {0,0,0};
 
 
 	for (auto e : owning_elements){
 
 		const std::vector<int> & control_points = this -> elements[e].get_points();
-		
+			
+
 		int local_index = -1;
 		for (int k =0 ; k < control_points.size(); ++k){
 			if (control_points[k] == i){
@@ -389,10 +339,13 @@ arma::vec::fixed<3> ShapeModelBezier<PointType>::get_point_normal_coordinates(un
 		double v = std::get<1>(local_tuple) / this -> get_degree();
 
 
+
 		n += this -> elements[e].get_normal_coordinates(u,v);
 
 
 	}
+
+
 
 
 	return arma::normalise(n);
@@ -491,8 +444,6 @@ void ShapeModelBezier<PointType>::compute_all_statistics(){
 		}
 	}
 
-	this -> save_connectivity(connected_elements);
-
 	// //std::cout << "\n- Computing all statistics over the " << connected_elements.size() << " surface element combinations ...\n";
 	
 	#pragma omp parallel for reduction(+:vol_sd_temp), reduction(+:cm_cov_temp), reduction(+:P_I_temp), reduction(+:P_M_I_temp)
@@ -526,33 +477,6 @@ void ShapeModelBezier<PointType>::compute_all_statistics(){
 	this -> compute_P_eigenvectors();
 	this -> compute_P_sigma();
 
-
-	this -> save_connectivity(connected_elements);
-
-
-
-}
-
-template <class PointType>
-void ShapeModelBezier<PointType>::save_connectivity(const std::vector< std::pair<int,int> > & connected_elements) const{
-
-
-	arma::mat connectivity_mat(this -> elements.size(),this -> elements.size());
-	connectivity_mat.fill(arma::datum::nan);
-
-	for (int k = 0; k < connected_elements.size(); ++k){
-		auto pair = connected_elements[k];
-
-		connectivity_mat(pair.first,pair.second) = arma::norm(
-			this -> elements[pair.first].get_center()
-			- this -> elements[pair.second].get_center()
-			);
-
-
-	}
-
-
-	connectivity_mat.save("connectivity_mat.txt",arma::raw_ascii);
 
 }
 
@@ -925,15 +849,20 @@ arma::rowvec::fixed<15> ShapeModelBezier<PointType>::L_row(int q, int r,
 	arma::vec e_r = arma::zeros<arma::vec>(3);
 	e_r(r) = 1;
 
-	L_col.rows(0,2) = - arma::dot(Ck,arma::cross(Cl,Cm)) * RBK::tilde(e_r) * RBK::tilde(Cj) * e_q;
-	L_col.rows(3,5) = - arma::dot(Ck,arma::cross(Cl,Cm)) * RBK::tilde(e_q) * RBK::tilde(Ci) * e_r;
-	L_col.rows(6,8) = arma::dot(e_r, RBK::tilde(Ci) * RBK::tilde(Cj) * e_q ) * arma::cross(Cl,Cm);
-	L_col.rows(9,11) = arma::dot(e_r, RBK::tilde(Ci) * RBK::tilde(Cj) * e_q ) * arma::cross(Cm,Ck);
-	L_col.rows(12,14) = arma::dot(e_r, RBK::tilde(Ci) * RBK::tilde(Cj) * e_q ) * arma::cross(Ck,Cl);
+	arma::mat::fixed<3,3> Ci_tilde = RBK::tilde(Ci);
+	arma::mat::fixed<3,3> Cj_tilde = RBK::tilde(Cj);
+	arma::vec::fixed<3> Cl_cross_Cm = arma::cross(Cl,Cm);
+
+	double large_dot_product = arma::dot(e_r, Ci_tilde * Cj_tilde * e_q );
+
+	L_col.rows(0,2) = - arma::dot(Ck,Cl_cross_Cm) * RBK::tilde(e_r) * Cj_tilde * e_q;
+	L_col.rows(3,5) = - arma::dot(Ck,Cl_cross_Cm) * RBK::tilde(e_q) * Ci_tilde * e_r;
+	L_col.rows(6,8) = large_dot_product * Cl_cross_Cm;
+	L_col.rows(9,11) = large_dot_product * arma::cross(Cm,Ck);
+	L_col.rows(12,14) = large_dot_product * arma::cross(Ck,Cl);
 
 	return L_col.t();
 }
-
 
 
 
@@ -966,13 +895,12 @@ void ShapeModelBezier<PointType>::run_monte_carlo(int N,
 	results_MI = arma::zeros<arma::mat>(7,N);
 	results_dims = arma::zeros<arma::mat>(3,N);
 
-
-	this -> take_and_save_slice(2,output_path + "/slice_z_baseline.txt",0);
-	this -> take_and_save_slice(1,output_path + "/slice_y_baseline.txt",0);
-	this -> take_and_save_slice(0,output_path + "/slice_x_baseline.txt",0);
-
-
-	this -> save_to_obj(output_path + "/iter_baseline.obj");
+	if (output_path.size() > 0){
+		this -> take_and_save_slice(2,output_path + "/slice_z_baseline.txt",0);
+		this -> take_and_save_slice(1,output_path + "/slice_y_baseline.txt",0);
+		this -> take_and_save_slice(0,output_path + "/slice_x_baseline.txt",0);
+		this -> save_to_obj(output_path + "/iter_baseline.obj");
+	}
 
 	arma::mat all_deviations(3 * this -> get_NControlPoints(),N);
 
@@ -990,11 +918,12 @@ void ShapeModelBezier<PointType>::run_monte_carlo(int N,
 
 		// Should be able to provide deviation in control points 
 		// here
-		const double volume = this -> compute_volume(deviation);
-		const arma::vec::fixed<3> center_of_mass = this -> compute_center_of_mass(volume,deviation);
-		const arma::mat::fixed<3,3> inertia  = this -> compute_inertia(deviation);
+		const double volume_p = this -> compute_volume(deviation);
+		const arma::vec::fixed<3> com_p = this -> compute_center_of_mass(volume_p,deviation);
+		const arma::mat::fixed<3,3> I_p  = this -> compute_inertia(volume_p,deviation);
+		double r_avg = std::cbrt( 3./4. * volume_p / arma::datum::pi ) ;
 
-		arma::mat I_C = inertia - volume * RBK::tilde(center_of_mass) * RBK::tilde(center_of_mass).t() ;
+		arma::mat I_C = I_p - RBK::tilde(com_p) * RBK::tilde(com_p).t() / std::pow(r_avg,2) ;
 		arma::vec I = {I_C(0,0),I_C(1,1),I_C(2,2),I_C(0,1),I_C(0,2),I_C(1,2)};
 
 		arma::vec moments_col(4);
@@ -1003,9 +932,9 @@ void ShapeModelBezier<PointType>::run_monte_carlo(int N,
 		moments_col.rows(0,2) = eig_val;
 
 
-		moments_col(3) = volume;
-		results_volume(iter) = volume;
-		results_cm.col(iter) = center_of_mass;
+		moments_col(3) = volume_p;
+		results_volume(iter) = volume_p;
+		results_cm.col(iter) = com_p;
 
 		results_inertia.col(iter) = I;
 		results_moments.col(iter) = moments_col;
@@ -1018,19 +947,21 @@ void ShapeModelBezier<PointType>::run_monte_carlo(int N,
 		results_eigenvectors.col(iter).rows(3,5) = eig_vec.col(1);
 		results_eigenvectors.col(iter).rows(6,8) = eig_vec.col(2);
 		results_Evectors.col(iter) = ShapeModelBezier<PointType>::get_E_vectors(I_C);
-		results_Y.col(iter) = ShapeModelBezier<PointType>::get_Y(volume,I_C);
+		results_Y.col(iter) = ShapeModelBezier<PointType>::get_Y(volume_p,I_C);
 		results_MI.col(iter).rows(0,5) = I;
-		results_MI.col(iter)(6) = volume;
+		results_MI.col(iter)(6) = volume_p;
 
-		results_dims.col(iter) = ShapeModelBezier<PointType>::get_dims(volume,I_C);
+		results_dims.col(iter) = ShapeModelBezier<PointType>::get_dims(volume_p,I_C);
 
 		// saving shape model
 
-		if (iter < 20){
-			this -> take_and_save_slice(2,output_path + "/slice_z_" + std::to_string(iter) + ".txt",0,deviation);
-			this -> take_and_save_slice(1,output_path + "/slice_y_" + std::to_string(iter) + ".txt",0,deviation);
-			this -> take_and_save_slice(0,output_path + "/slice_x_" + std::to_string(iter) + ".txt",0,deviation);
-			this -> save_to_obj(output_path + "/iter_" + std::to_string(iter) + ".obj");
+		if (output_path.size()){
+			if (iter < 20){
+				this -> take_and_save_slice(2,output_path + "/slice_z_" + std::to_string(iter) + ".txt",0,deviation);
+				this -> take_and_save_slice(1,output_path + "/slice_y_" + std::to_string(iter) + ".txt",0,deviation);
+				this -> take_and_save_slice(0,output_path + "/slice_x_" + std::to_string(iter) + ".txt",0,deviation);
+				this -> save_to_obj(output_path + "/iter_" + std::to_string(iter) + ".obj");
+			}
 		}
 
 	}
@@ -1055,7 +986,9 @@ arma::vec::fixed<3> ShapeModelBezier<PointType>::get_dims(const double & volume,
 		std::sqrt(A + B - C)
 	};
 
-	return std::sqrt(5./(2 * volume)) * dims;
+	double r_abs = std::cbrt( 3./4. * volume / arma::datum::pi ) ;
+
+	return std::sqrt(5./(2 * volume)) * dims * r_abs;
 
 
 
@@ -1615,13 +1548,12 @@ void ShapeModelBezier<PointType>::compute_point_covariances(double sigma_sq,doub
 	this -> point_covariances.resize(this -> get_NControlPoints());
 	for (unsigned int i = 0; i < this -> get_NControlPoints(); ++i){
 		this -> point_covariances[i].resize(this -> get_NControlPoints());
-
 	}
 
 	for (unsigned int i = 0; i < this -> get_NControlPoints(); ++i){
 
-
 		arma::vec::fixed<3> ni = this -> get_point_normal_coordinates(i);
+
 
 		arma::vec::fixed<3> u_2 = arma::randn<arma::vec>(3);
 		u_2 = arma::normalise(arma::cross(ni,u_2));
@@ -1632,6 +1564,7 @@ void ShapeModelBezier<PointType>::compute_point_covariances(double sigma_sq,doub
 		std::vector<int> Pi_cor_indices = {int(i)};
 		std::vector<arma::mat::fixed<3,3>> Pi_cor = {P};
 
+
 		this -> point_covariances[i][i] = P;
 
 		for (unsigned int j = i + 1; j < this -> get_NControlPoints(); ++j){
@@ -1639,8 +1572,7 @@ void ShapeModelBezier<PointType>::compute_point_covariances(double sigma_sq,doub
 
 			arma::vec::fixed<3> nj = this -> get_point_normal_coordinates(j);
 
-			double distance = arma::norm(this ->get_point_coordinates(i)
-				- this ->get_point_coordinates(j));
+			double distance = arma::norm(this ->get_point_coordinates(i) - this -> get_point_coordinates(j));
 
 			if ( distance < 3 * correl_distance){
 				double decay = std::exp(- std::pow(distance / correl_distance,2)) ;
@@ -1664,9 +1596,7 @@ void ShapeModelBezier<PointType>::compute_point_covariances(double sigma_sq,doub
 
 	}
 
-	// //std::cout << "Finding correlated elements in shape\n";
 	this -> find_correlated_elements();
-	// //std::cout << "Done finding correlated elements in shape\n";
 
 
 }
