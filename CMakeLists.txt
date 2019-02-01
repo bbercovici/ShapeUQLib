@@ -64,7 +64,6 @@ add_library(${LIB_NAME} SHARED
 	source/RefFrame.cpp
 	source/ShapeModel.cpp
 	source/ShapeModelBezier.cpp
-	source/ShapeModelImporter.cpp
 	source/ShapeModelTri.cpp
 	)
 

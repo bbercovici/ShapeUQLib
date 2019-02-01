@@ -12,9 +12,7 @@
 
 
 
-class Ray ;
 class Element;
-template <template<class> class ContainerType, class PointType>  class KDTree ;
 
 /**
 Declaration of the ShapeModel class. Base class for 

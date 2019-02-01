@@ -1,7 +1,5 @@
 #include "ShapeModelTri.hpp"
 #include "Facet.hpp"
-#include <boost/progress.hpp>
-
 
 #pragma omp declare reduction (+ : arma::vec::fixed<3> : omp_out += omp_in) \
 initializer( omp_priv = arma::zeros<arma::vec>(3) )
@@ -12,28 +10,28 @@ void ShapeModelTri<PointType>::update_mass_properties() {
 
 
 
-	std::cout << "Computing mass properties...\n";
-	std::cout << "\t Computing surface_area...\n";
+	////std::cout << "Computing mass properties...\n";
+	////std::cout << "\t Computing surface_area...\n";
 
 	this -> compute_surface_area();
 
-	std::cout << "\t Computing volume...\n";
+	////std::cout << "\t Computing volume...\n";
 
 	this -> compute_volume();
 	
-	std::cout << "\t Computing center of mass...\n";
+	////std::cout << "\t Computing center of mass...\n";
 	
 	this -> compute_center_of_mass();
 	
 	std::chrono::time_point<std::chrono::system_clock> start, end;
 	start = std::chrono::system_clock::now();
 	
-	std::cout << "\t Computing inertia...\n";
+	////std::cout << "\t Computing inertia...\n";
 
 	this -> compute_inertia();
 	end = std::chrono::system_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end - start;
-	std::cout << "elapsed time in ShapeModelTri<PointType>::update_mass_properties: " << elapsed_seconds.count() << " s"<< std::endl;
+	////std::cout << "elapsed time in ShapeModelTri<PointType>::update_mass_properties: " << elapsed_seconds.count() << " s"<< std::endl;
 	
 
 }
@@ -57,7 +55,7 @@ ShapeModelTri<PointType>::ShapeModelTri(const std::vector<std::vector<int>> & ve
 		this -> add_control_point(vertex);
 
 	}
-	std::cout << control_points.size() << " control points.\n";
+	////std::cout << control_points.size() << " control points.\n";
 
 	std::vector<Facet> elements;
 	
@@ -84,7 +82,7 @@ ShapeModelTri<PointType>::ShapeModelTri(const std::vector<std::vector<int>> & ve
 		elements. push_back(facet);
 	}
 
-	std::cout << elements.size() << " facets.\n";
+	////std::cout << elements.size() << " facets.\n";
 
 	this -> set_elements(elements);
 
@@ -179,120 +177,6 @@ Facet & ShapeModelTri<PointType>::get_element(int e){
 }
 
 
-template <class PointType>
-bool ShapeModelTri<PointType>::contains(double * point, double tol ) {
-
-	double lagrangian = 0;
-
-	// Facet loop
-	// pragma omp parallel for reduction(+:lagrangian) if (USE_OMP_DYNAMIC_ANALYSIS)
-	for (unsigned int facet_index = 0; facet_index < this -> get_NElements(); ++ facet_index) {
-
-		const std::vector<int> & vertices = this -> elements[facet_index].get_points();
-
-		const double * r1 =  this -> control_points[vertices[0]].get_point_coordinates().colptr(0);
-		const double * r2 =  this -> control_points[vertices[1]].get_point_coordinates().colptr(0);
-		const double * r3 =  this -> control_points[vertices[2]].get_point_coordinates().colptr(0);
-
-		double r1m[3];
-		double r2m[3];
-		double r3m[3];
-
-		r1m[0] = r1[0] - point[0];
-		r1m[1] = r1[1] - point[1];
-		r1m[2] = r1[2] - point[2];
-
-		r2m[0] = r2[0] - point[0];
-		r2m[1] = r2[1] - point[1];
-		r2m[2] = r2[2] - point[2];
-
-		r3m[0] = r3[0] - point[0];
-		r3m[1] = r3[1] - point[1];
-		r3m[2] = r3[2] - point[2];
-
-
-		double R1 = std::sqrt( r1m[0] * r1m[0]
-			+ r1m[1] * r1m[1]
-			+ r1m[2] * r1m[2]       );
-
-		double R2 = std::sqrt( r2m[0] * r2m[0]
-			+ r2m[1] * r2m[1]
-			+ r2m[2] * r2m[2]      );
-
-
-		double R3 = std::sqrt( r3m[0] * r3m[0]
-			+ r3m[1] * r3m[1]
-			+ r3m[2] * r3m[2]      );
-
-		double r2_cross_r3_0 = r2m[1] * r3m[2] - r2m[2] * r3m[1];
-		double r2_cross_r3_1 = r3m[0] * r2m[2] - r3m[2] * r2m[0];
-		double r2_cross_r3_2 = r2m[0] * r3m[1] - r2m[1] * r3m[0];
-
-
-		double wf = 2 * std::atan2(
-			r1m[0] * r2_cross_r3_0 + r1m[1] * r2_cross_r3_1 + r1m[2] * r2_cross_r3_2,
-
-			R1 * R2 * R3 + R1 * (r2m[0] * r3m[0] + r2m[1] * r3m[1]  + r2m[2] * r3m[2] )
-			+ R2 * (r3m[0] * r1m[0] + r3m[1] * r1m[1] + r3m[2] * r1m[2])
-			+ R3 * (r1m[0] * r2m[0] + r1m[1] * r2m[1] + r1m[2] * r2m[2]));
-
-
-
-		lagrangian += wf;
-
-	}
-
-	if (std::abs(lagrangian) < tol) {
-		return false;
-	}
-	else {
-		return true;
-	}
-
-}
-
-template <class PointType>
-void ShapeModelTri<PointType>::random_sampling(unsigned int N,arma::mat & points, arma::mat & normals) const{
-
-	std::cout << " - Sampling surface points from the true shape model ...\n";
-
-	int N_points_per_element = int(double(N) / this -> elements.size());
-
-	points = arma::zeros<arma::mat>(3,N_points_per_element * this -> elements.size());
-	normals = arma::zeros<arma::mat>(3, N_points_per_element * this -> elements.size());
-
-	// N points are randomly sampled from the surface of the shape model
-	boost::progress_display progress(this -> elements.size());
-	
-	// #pragma omp parallel for
-	for (unsigned int f = 0; f < this -> elements.size(); ++f){
-
-		const std::vector<int> & vertices = this -> elements[f].get_points();
-
-		const arma::vec::fixed<3> & V0 = this -> control_points[vertices[0]].get_point_coordinates();
-		const arma::vec::fixed<3> & V1 = this -> control_points[vertices[1]].get_point_coordinates();
-		const arma::vec::fixed<3> & V2 = this -> control_points[vertices[2]].get_point_coordinates();
-
-		arma::vec noise_intensity = 1e-1 * arma::randu<arma::vec>(1);
-
-		for (int i = 0; i < N_points_per_element; ++i){
-
-			arma::vec random = arma::randu<arma::vec>(2);
-			double u = random(0);
-			double v = random(1);
-
-			points.col(N_points_per_element * f + i) = (1 - std::sqrt(u)) * V0 + std::sqrt(u) * ( 1 - v) * V1 + std::sqrt(u) * v * V2 +  noise_intensity(0) * arma::randn<arma::vec>(3);
-			normals.col(N_points_per_element * f + i) = arma::normalise(arma::normalise(arma::cross(V1 - V0,V2 - V0)) + 0.1 * arma::randn<arma::vec>(3));
-
-		}
-		++progress;
-	}
-
-}
-
-
-
-
 
 
 
@@ -355,7 +239,7 @@ void ShapeModelTri<PointType>::check_normals_consistency(double tol) const {
 
 	facet_area_average = facet_area_average / this -> elements.size();
 	if (arma::norm(surface_sum) / facet_area_average > tol) {
-		std::cout <<  "Warning : normals were incorrectly oriented. norm(sum(n * s))/sum(s)= " + std::to_string(arma::norm(surface_sum) / facet_area_average) << std::endl;
+		////std::cout <<  "Warning : normals were incorrectly oriented. norm(sum(n * s))/sum(s)= " + std::to_string(arma::norm(surface_sum) / facet_area_average) << std::endl;
 	}
 
 }

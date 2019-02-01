@@ -13,8 +13,6 @@
 #include <ShapeModel.hpp>
 #include <Facet.hpp>
 
-class Ray;
-
 
 /**
 Declaration of the ShapeModelTri class. Specialized

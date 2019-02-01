@@ -2,7 +2,7 @@
 #define HEADER_SHAPEMODELBEZIER
 
 #include <ShapeModel.hpp>
-#include "Bezier.hpp"
+#include <Bezier.hpp>
 
 #include <array>
 #include <ShapeModelTri.hpp>
@@ -241,7 +241,7 @@ protected:
 	Generates all the possible combinations of indices as needed in the inertia moments
 	computation from the tensorization of the base vector of Bezier indices
 	@param n_indices number of indices to tensorize 
-	@parma base_vector vector of indices to tensorize (contains N such indices pairs)
+	@param base_vector vector of indices to tensorize (contains N such indices pairs)
 	@param index_vectors container holding the final N ^ n_indices vectors of indices pairs
 	@param temp_vector container holding the current vector of indices being built
 	@param depth depth of the current vector

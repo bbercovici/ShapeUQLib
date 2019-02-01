@@ -69,8 +69,8 @@ void ShapeModel<PointType>:: align_with_principal_axes() {
 
 	this -> compute_inertia();
 
-	std::cout << "Non-dimensional inertia: " << std::endl;
-	std::cout << this -> inertia << std::endl;
+	//std::cout << "Non-dimensional inertia: " << std::endl;
+	//std::cout << this -> inertia << std::endl;
 
 	arma::vec::fixed<3> moments;
 	arma::mat::fixed<3,3> axes;
@@ -166,16 +166,16 @@ void ShapeModel<PointType>::get_bounding_box(double * bounding_box,arma::mat M) 
 	bounding_box[4] = bbox_max(1);
 	bounding_box[5] = bbox_max(2);
 
-	std::cout << "- Bounding box : " << std::endl;
-	std::cout << "-- xmin : " << bbox_min(0) << std::endl;
-	std::cout << "-- xmax : " << bbox_max(0) << std::endl;
+	//std::cout << "- Bounding box : " << std::endl;
+	//std::cout << "-- xmin : " << bbox_min(0) << std::endl;
+	//std::cout << "-- xmax : " << bbox_max(0) << std::endl;
 
-	std::cout << "-- ymin : " << bbox_min(1) << std::endl;
-	std::cout << "-- ymax : " << bbox_max(1) << std::endl;
+	//std::cout << "-- ymin : " << bbox_min(1) << std::endl;
+	//std::cout << "-- ymax : " << bbox_max(1) << std::endl;
 
 
-	std::cout << "-- zmin : " << bbox_min(2) << std::endl;
-	std::cout << "-- zmax : " << bbox_max(2) << std::endl;
+	//std::cout << "-- zmin : " << bbox_min(2) << std::endl;
+	//std::cout << "-- zmax : " << bbox_max(2) << std::endl;
 
 
 }
@@ -239,13 +239,13 @@ void ShapeModel<PointType>::get_principal_inertias(arma::mat & axes,arma::vec & 
 	}
 	
 
-	std::cout << "Principal axes: " << std::endl;
-	std::cout << axes << std::endl;
+	//std::cout << "Principal axes: " << std::endl;
+	//std::cout << axes << std::endl;
 
 
 
-	std::cout << "Non-dimensional principal moments: " << std::endl;
-	std::cout << moments << std::endl;
+	//std::cout << "Non-dimensional principal moments: " << std::endl;
+	//std::cout << moments << std::endl;
 
 
 }
