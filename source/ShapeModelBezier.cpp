@@ -466,12 +466,10 @@ void ShapeModelBezier<PointType>::compute_all_statistics(){
 	this -> P_MI = P_M_I_temp;
 	this -> P_I = P_I_temp;
 
-
 	this -> compute_P_MX();
 	this -> compute_P_Y();
 	this -> compute_P_moments();
 	this -> compute_P_dims();
-
 
 	this -> compute_P_Evectors();
 	this -> compute_P_eigenvectors();
