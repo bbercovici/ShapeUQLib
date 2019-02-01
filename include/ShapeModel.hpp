@@ -7,7 +7,6 @@
 #include <set>
 #include <map>
 #include <limits>
-#include <OMP_flags.hpp>
 
 #include <FrameGraph.hpp>
 
