@@ -490,8 +490,6 @@ void ShapeModelBezier<PointType>::compute_all_statistics(){
 	this -> save_connectivity(connected_elements);
 
 	// //std::cout << "\n- Computing all statistics over the " << connected_elements.size() << " surface element combinations ...\n";
-
-	boost::progress_display progress(connected_elements.size()) ;
 	
 	#pragma omp parallel for reduction(+:vol_sd_temp), reduction(+:cm_cov_temp), reduction(+:P_I_temp), reduction(+:P_M_I_temp)
 	for (unsigned int k = 0; k < connected_elements.size(); ++k) {
@@ -504,7 +502,6 @@ void ShapeModelBezier<PointType>::compute_all_statistics(){
 		P_I_temp += this -> compute_patch_pair_PI_contribution(patch_e,patch_f);
 		P_M_I_temp += this -> compute_patch_pair_P_MI_contribution(patch_e,patch_f);
 
-		++progress;
 
 	}
 
@@ -976,15 +973,12 @@ void ShapeModelBezier<PointType>::run_monte_carlo(int N,
 	arma::mat all_deviations(3 * this -> get_NControlPoints(),N);
 
 	// //std::cout << "Drawing random deviations...\n";
-	boost::progress_display progress_display_deviations(N) ;
 
 	for (int iter = 0; iter < N; ++iter){
 		arma::vec deviation = this -> shape_covariance_sqrt * arma::randn<arma::vec>(3 * this -> get_NControlPoints());	
 		all_deviations.col(iter) = deviation;
-		++progress_display_deviations;
 	}
 
-	boost::progress_display progress(N) ;
 	#pragma omp parallel for
 	for (int iter = 0; iter < N; ++iter){
 
@@ -1034,7 +1028,6 @@ void ShapeModelBezier<PointType>::run_monte_carlo(int N,
 			this -> take_and_save_slice(0,output_path + "/slice_x_" + std::to_string(iter) + ".txt",0,deviation);
 			this -> save_to_obj(output_path + "/iter_" + std::to_string(iter) + ".obj");
 		}
-		++progress;
 
 	}
 	

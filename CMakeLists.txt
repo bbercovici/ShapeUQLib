@@ -26,7 +26,7 @@
 # @brief  CMake listing enabling compilation and installation of the ShapeUQLib library
 
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 set(LIB_NAME "ShapeUQLib" CACHE STRING "Name of library to be created.")
 
@@ -49,10 +49,6 @@ include_directories(${RBK_INCLUDE_DIR} )
 
 # Find OpenMP
 find_package(OpenMP)
-if(OPENMP_FOUND)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-endif()
 
 # Add source files in root directory
 add_library(${LIB_NAME} SHARED
