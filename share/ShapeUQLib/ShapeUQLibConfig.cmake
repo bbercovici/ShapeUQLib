@@ -28,6 +28,6 @@ elseif(UNIX AND NOT APPLE)
 else()
 	message(FATAL_ERROR "Unsupported platform")
 endif()
-set(SHAPEUQLIB_INCLUDE_DIR /usr/local/include/ShapeUQLib)
+set(SHAPEUQLIB_INCLUDE_DIR /usr/local/include/ShapeUQLib/)
 
 message("-- Found ShapeUQLib: " ${SHAPEUQLIB_LIBRARY})
