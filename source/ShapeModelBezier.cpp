@@ -1,8 +1,6 @@
 #include <ShapeUQLib/ShapeModelTri.hpp>
 #include <ShapeUQLib/ShapeModelBezier.hpp>
-
-
-
+#include <omp.h>
 
 #pragma omp declare reduction (+ : arma::vec::fixed<6> : omp_out += omp_in)\
 initializer( omp_priv = arma::zeros<arma::vec>(6) )
