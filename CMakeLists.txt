@@ -73,7 +73,7 @@ set(library_dependencies
 
 if (UNIX AND NOT APPLE )
 	target_link_libraries(${LIB_NAME} ${library_dependencies})
-elseif (OPENMP_FOUND)
+elseif (OPENMP_FOUND AND NOT NO_OMP)
 	target_link_libraries(${LIB_NAME} ${library_dependencies} OpenMP::OpenMP_CXX)
 else()
 	target_link_libraries(${LIB_NAME} ${library_dependencies})

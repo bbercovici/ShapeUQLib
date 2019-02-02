@@ -319,7 +319,7 @@ arma::vec::fixed<3> ShapeModelBezier<PointType>::get_point_normal_coordinates(un
 	for (auto e : owning_elements){
 
 		const std::vector<int> & control_points = this -> elements[e].get_points();
-			
+
 
 		int local_index = -1;
 		for (int k =0 ; k < control_points.size(); ++k){
@@ -454,9 +454,8 @@ void ShapeModelBezier<PointType>::compute_all_statistics(){
 
 		vol_sd_temp += this -> compute_patch_pair_vol_sd_contribution(patch_e,patch_f);
 		cm_cov_temp += this -> compute_patch_pair_cm_cov_contribution(patch_e,patch_f);
-		P_I_temp += this -> compute_patch_pair_PI_contribution(patch_e,patch_f);
+		P_I_temp += this -> compute_patch_pair_PI_contribution(patch_e,patch_f);		
 		P_M_I_temp += this -> compute_patch_pair_P_MI_contribution(patch_e,patch_f);
-
 
 	}
 
@@ -465,6 +464,11 @@ void ShapeModelBezier<PointType>::compute_all_statistics(){
 	this -> cm_cov = cm_cov_temp / std::pow(this -> volume,2);
 	this -> P_MI = P_M_I_temp;
 	this -> P_I = P_I_temp;
+
+	std::cout << "done with covariances\n";
+	if (1e-5 > arma::norm(arma::ones<arma::vec>(3) - arma::abs(arma::eig_gen(this -> inertia)/arma::eig_gen(this -> inertia).max()))){
+		return;
+	}
 
 	this -> compute_P_MX();
 	this -> compute_P_Y();
@@ -2015,6 +2019,7 @@ template <class PointType>
 arma::mat::fixed<3,3> ShapeModelBezier<PointType>::P_XX() const { 
 
 
+	
 	return ShapeModelBezier<PointType>::partial_X_partial_I() * this -> P_I * ShapeModelBezier<PointType>::partial_X_partial_I().t();
 
 }
@@ -2035,7 +2040,7 @@ arma::mat::fixed<3,6> ShapeModelBezier<PointType>::partial_X_partial_I() const{
 	mat.row(0) = ShapeModelBezier<PointType>::partial_T_partial_I();
 	mat.row(1) = ShapeModelBezier<PointType>::partial_U_partial_I();
 	mat.row(2) = ShapeModelBezier<PointType>::partial_theta_partial_I();
-	return mat;
+
 }
 
 template <class PointType>
@@ -2076,11 +2081,10 @@ arma::rowvec::fixed<6> ShapeModelBezier<PointType>::partial_theta_partial_I() co
 
 	double Pi = arma::dot(I, Q * I);
 
-	double U = std::sqrt(T * T - 3 * Pi)/3;
+	double U = std::sqrt(std::abs(T * T - 3 * Pi))/3;
 
 	double Theta = (-2 * std::pow(T,3) + 9 * T * Pi - 27 * d)/(54 * std::pow(U,3));
-
-
+	
 	arma::rowvec dthetadI = (ShapeModelBezier<PointType>::partial_theta_partial_Theta(Theta) 
 		* ShapeModelBezier<PointType>::partial_Theta_partial_W(T,Pi,U,d) 
 		* ShapeModelBezier<PointType>::partial_W_partial_I());
@@ -2120,7 +2124,7 @@ arma::vec::fixed<4> ShapeModelBezier<PointType>::get_Y(const double & volume,
 
 	double Pi = arma::dot(I, Q * I);
 
-	double U = std::sqrt(T * T - 3 * Pi)/3;
+	double U = std::sqrt(std::abs(T * T - 3 * Pi))/3;
 
 	double Theta = (-2 * std::pow(T,3) + 9 * T * Pi - 27 * d)/(54 * std::pow(U,3));
 	double theta = std::acos(Theta);
@@ -2228,7 +2232,10 @@ arma::rowvec::fixed<2> ShapeModelBezier<PointType>::partial_U_partial_Z() const{
 	};
 
 	double Pi = arma::dot(I, Q * I);
-	double U = std::sqrt(T * T - 3 * Pi)/3;
+
+	// The absolute value is here to avoid nan 
+	// arising from numerical errors (like T * T - 3 * Pi == -1e-16)
+	double U = std::sqrt(std::abs(T * T - 3 * Pi))/3;
 
 
 	arma::rowvec::fixed<2> dUdZ = {2 * T,-3}	;
@@ -2340,7 +2347,7 @@ arma::mat::fixed<4,4>  ShapeModelBezier<PointType>::partial_M_partial_Y() const{
 
 
 	double Pi = arma::dot(I, Q * I);
-	double U = std::sqrt(T * T - 3 * Pi)/3;
+	double U = std::sqrt(std::abs(T * T - 3 * Pi))/3;
 	double Theta = (-2 * std::pow(T,3) + 9 * T * Pi - 27 * d)/(54 * std::pow(U,3));
 	double theta = std::acos(Theta);
 
@@ -2562,6 +2569,7 @@ void ShapeModelBezier<PointType>::compute_P_dims() {
 
 	arma::mat::fixed<3,4> partial = this -> partial_dim_partial_M();
 
+
 	this -> P_dims = partial * this -> P_moments * partial.t();
 
 }
@@ -2621,7 +2629,7 @@ void ShapeModelBezier<PointType>::compute_P_Evectors() {
 
 
 	double Pi = arma::dot(I, Q * I);
-	double U = std::sqrt(T * T - 3 * Pi)/3;
+	double U = std::sqrt(std::abs(T * T - 3 * Pi))/3;
 	double Theta = (-2 * std::pow(T,3) + 9 * T * Pi - 27 * d)/(54 * std::pow(U,3));
 	double theta = std::acos(Theta);
 
@@ -2703,7 +2711,7 @@ arma::rowvec::fixed<6> ShapeModelBezier<PointType>::get_P_lambda_I(const int lam
 
 
 	double Pi = arma::dot(I, Q * I);
-	double U = std::sqrt(T * T - 3 * Pi)/3;
+	double U = std::sqrt(std::abs(T * T - 3 * Pi))/3;
 	double Theta = (-2 * std::pow(T,3) + 9 * T * Pi - 27 * d)/(54 * std::pow(U,3));
 	double theta = std::acos(Theta);
 
