@@ -48,8 +48,9 @@ find_package(RigidBodyKinematics REQUIRED PATHS ${RBK_LOC})
 include_directories(${RBK_INCLUDE_DIR} )
 
 # Find OpenMP
-find_package(OpenMP)
-
+if (NOT NO_OMP)
+	find_package(OpenMP)
+endif()
 # Add source files in root directory
 add_library(${LIB_NAME} SHARED
 	source/Bezier.cpp
@@ -86,5 +87,5 @@ file(GLOB includes include/*.hpp)
 if(NOT BREW)
 	install (TARGETS ${LIB_NAME} DESTINATION /usr/local/lib/)
 	install (DIRECTORY ${PROJECT_SOURCE_DIR}/share/${LIB_NAME} DESTINATION /usr/local/share)
-	install (DIRECTORY ${PROJECT_SOURCE_DIR}/include/ShapeUQLib DESTINATION /usr/local/include/ FILES_MATCHING PATTERN "*.hpp")
+	install (DIRECTORY ${PROJECT_SOURCE_DIR}/include/ShapeUQLib DESTINATION /usr/local/include FILES_MATCHING PATTERN "*.hpp")
 endif()

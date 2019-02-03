@@ -197,6 +197,15 @@ public:
 	void populate_mass_properties_coefs_deterministics();
 	void populate_mass_properties_coefs_stochastics();
 
+	/**
+	Returns the partial derivative of the MRP parametrization of the principal frame 
+	with respect to the inertia tensor components
+	@return partial derivative of the MRP parametrization of the principal frame 
+	with respect to the inertia tensor components
+	*/
+	arma::mat::fixed<3,6> new_partial_sigma_partial_I() const;
+
+
 
 protected:
 
