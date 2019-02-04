@@ -1,6 +1,13 @@
 #include <ShapeUQLib/ShapeUQLib.hpp>
 
 int main(){
-	ShapeModelBezier<ControlPoint> shape;
+	ShapeModelTri<ControlPoint> shape_tri;
+
+
+	ShapeModelBezier<ControlPoint> shape(shape_tri,"",nullptr);
+
+
+
+	
 	return 0;
 }

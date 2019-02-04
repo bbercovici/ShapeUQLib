@@ -51,6 +51,7 @@ include_directories(${RBK_INCLUDE_DIR} )
 if (NOT NO_OMP)
 	find_package(OpenMP)
 endif()
+
 # Add source files in root directory
 add_library(${LIB_NAME} SHARED
 	source/Bezier.cpp
@@ -68,8 +69,7 @@ add_library(${LIB_NAME} SHARED
 set(library_dependencies
 	${ARMADILLO_LIBRARIES}
 	${Boost_LIBRARIES}
-	${RBK_LIBRARY}
-	)
+	${RBK_LIBRARY})
 
 
 if (UNIX AND NOT APPLE )
